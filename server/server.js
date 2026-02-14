@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import connectDB from './db.config.js'; 
-import { createTest } from './model/Test.model.js';
+import connectDB from './config/db.config.js'; 
+import  applicantRoutes from './routers/applicant.route.js';
 
 dotenv.config();
 
@@ -19,12 +19,13 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
+app.use('/api/applicants', applicantRoutes); // Adjust the path as needed
 
 // Start server
 app.listen(PORT, () => {
     connectDB(); // Connect to MongoDB when the server starts
-    createTest({ name: 'Sample Test', score: 95 }) // Example of creating a test entry
-        .then(test => console.log('Test created:', test))
-        .catch(err => console.error('Error creating test:', err));
-    console.log(`Server is running on port ${PORT}`);
+    // createTest({ name: 'Sample Test', score: 95 }) // Example of creating a test entry
+    //     .then(test => console.log('Test created:', test))
+    //     .catch(err => console.error('Error creating test:', err));
+    // console.log(`Server is running on port ${PORT}`);
 }); 
