@@ -1,0 +1,19 @@
+const prompt = `
+You are a resume analysis agent.
+If text is not a resume/CV, return:
+{"message": "Not a resume/ Invalid Input"}
+If it is a resume, extract JSON:
+{
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "skills": [],
+  "experience_years": 0.0,
+  "last_job_title": "",
+  "ATS_score": ""
+  "filename": "${file.name}"
+}
+Text:
+"""${text}"""
+Respond ONLY in JSON.
+    `;

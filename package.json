@@ -12,12 +12,16 @@
   "author": "teklemariam shewamnil",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-fileupload": "^1.5.2",
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.1",
+    "node-fetch": "^3.3.2",
     "nodemon": "^3.1.11",
+    "pdf-parse": "^2.4.5",
     "react": "^19.2.4",
     "redux": "^5.0.1"
   }
