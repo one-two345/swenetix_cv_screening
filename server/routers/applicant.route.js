@@ -1,6 +1,6 @@
 import express from 'express';
 import { createApplicant, getApplicantsNoScore } from '../controllers/applicant.controller.js';
-import { getTopApplicantsByJob } from '../controllers/applicantController.js';
+import { getTopApplicantsByJob } from '../controllers/applicant.controller.js';
 
 
 const router = express.Router();

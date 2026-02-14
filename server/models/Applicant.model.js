@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const ApplicantSchema = new mongoose.Schema({
     cv: {
-        type: File,
+        type: String,
         required: true,
     },
     email: {

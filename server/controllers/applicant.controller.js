@@ -2,7 +2,11 @@ import Applicant from '../models/Applicant.model.js';
 
 export const createApplicant = async (req, res) => {
     try {
-        const applicant = new Applicant(req.body);
+        const applicantData = {
+            ...req.body,
+            cv: req.file.path
+        };
+        const applicant = new Applicant(applicantData);
         const savedApplicant = await applicant.save();
         res.status(201).json(savedApplicant);
     } catch (error) {
