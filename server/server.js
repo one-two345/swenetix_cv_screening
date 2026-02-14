@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.config.js'; 
 import  applicantRoutes from './routers/applicant.route.js';
+import jdRoutes from './routers/jd.route.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 app.use('/api/applicants', applicantRoutes); // Adjust the path as needed
+app.use('/api/jds', jdRoutes); // Adjust the path as needed
 
 // Start server
 app.listen(PORT, () => {

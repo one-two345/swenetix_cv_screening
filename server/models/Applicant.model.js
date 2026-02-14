@@ -2,9 +2,8 @@ import mongoose from 'mongoose';
 
 const ApplicantSchema = new mongoose.Schema({
     cv: {
-        type: String,
+        type: File,
         required: true,
-        
     },
     email: {
         type: String,
@@ -15,11 +14,18 @@ const ApplicantSchema = new mongoose.Schema({
         type: Number,
         required: false
     },
+    job: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'JD',   
+        required: true
+    },
     timestamp: {
         type: Date,
         default: Date.now
     }
 });
+
+
 
 export default mongoose.model('Applicant', ApplicantSchema);
 

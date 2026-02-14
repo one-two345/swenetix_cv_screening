@@ -1,23 +1,31 @@
 import mongoose from 'mongoose';    
 
 const JDSchema = new mongoose.Schema({
-    cv: {
-        type: File,
-        required: true,
-        
-    },
-    email: {
+    title: {
         type: String,
         required: true,
         trim: true
     },
-    timestamp: true
+    description: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    location: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    employmentType: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    timestamp: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 export default mongoose.model('JD', JDSchema);
 
-export const createApplicant = async (applicantData) => {
-    const Applicant = mongoose.model('Applicant');
-    const applicant = new Applicant(applicantData);
-    return await applicant.save();
-};
