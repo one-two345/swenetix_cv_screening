@@ -17,17 +17,10 @@ app.use(express.json());
 
 
 // Routes
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
-app.use('/api/applicants', applicantRoutes); // Adjust the path as needed
-app.use('/api/jds', jdRoutes); // Adjust the path as needed
+app.use('/api/applicants', applicantRoutes); 
+app.use('/api/jds', jdRoutes); 
 
 // Start server
 app.listen(PORT, () => {
-    connectDB(); // Connect to MongoDB when the server starts
-    // createTest({ name: 'Sample Test', score: 95 }) // Example of creating a test entry
-    //     .then(test => console.log('Test created:', test))
-    //     .catch(err => console.error('Error creating test:', err));
-    // console.log(`Server is running on port ${PORT}`);
+    connectDB();
 }); 
