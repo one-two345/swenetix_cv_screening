@@ -1,30 +1,189 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import connectDB from './db.config.js'; 
-import { createTest } from './model/Test.model.js';
+import express from "express";
+import fileUpload from "express-fileupload";
+import * as pdfParse from "pdf-parse";
+import mongoose from "mongoose";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+import Applicant from "./model/Applicant.model.js";
+import Application from "./model/Application.model.js";
+import Job from "./model/Job.model.js";
+import Result from "./model/Result.model.js";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middleware
-app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
+
+// Connect to MongoDB via Mongoose
+mongoose.connect(process.env.MONGO_URI, {
+  dbName: process.env.MONGO_DB || "hr_system",
+}).then(() => console.log("MongoDB connected")).catch(err => console.error(err));
+
+async function callGeminiFlash(prompt) {
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+    encodeURIComponent(process.env.GEMINI_API_KEY);
+
+  const body = { text: prompt };
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+  return data.candidates?.[0]?.output || "";
+}
 
 
+app.post("/jobs", async (req, res) => {
+  try {
+    const { title, description, location, employmentType } = req.body;
+    if (!title || !description) return res.status(400).json({ error: "Missing title or description" });
 
-// Routes
-app.get('/', (req, res) => {
-    res.send('Hello World!');
+    const job = await Job.create({ title, description, location, employmentType });
+    res.json({ status: "success", jobId: job._id, job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Start server
-app.listen(PORT, () => {
-    connectDB(); // Connect to MongoDB when the server starts
-    createTest({ name: 'Sample Test', score: 95 }) // Example of creating a test entry
-        .then(test => console.log('Test created:', test))
-        .catch(err => console.error('Error creating test:', err));
-    console.log(`Server is running on port ${PORT}`);
-}); 
+
+app.post("/apply/:jobId", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(jobId)) return res.status(400).json({ error: "Invalid jobId" });
+    if (!req.files?.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+
+    const file = req.files.file;
+    const pdfData = await pdfParse(file.data);
+    const text = pdfData.text || "";
+
+    const prompt = `
+You are a resume analysis agent.
+If text is not a resume/CV, return:
+{"message": "Not a resume/ Invalid Input"}
+If it is a resume, extract JSON:
+{
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "skills": [],
+  "experience_years": 0.0,
+  "last_job_title": "",
+  "ATS_score": ""
+  "filename": "${file.name}"
+}
+Text:
+"""${text}"""
+Respond ONLY in JSON.
+    `;
+
+    const aiOutput = await callGeminiFlash(prompt);
+
+    let parsed;
+    try {
+      const cleaned = aiOutput.replace(/```json\s*/g, "").replace(/```/g, "");
+      parsed = JSON.parse(cleaned.trim());
+    } catch {
+      return res.status(500).json({ error: "AI parse error", raw: aiOutput });
+    }
+
+    if (parsed.message) return res.status(400).json(parsed);
+
+    let applicant = await Applicant.findOne({ email: parsed.email });
+    if (!applicant) {
+      applicant = await Applicant.create({
+        fullName: parsed.full_name,
+        email: parsed.email,
+      });
+    }
+
+    const application = await Application.create({
+      applicant: applicant._id,
+      job: job._id,
+      cvData: file.data,
+      cvContentType: file.mimetype,
+    });
+
+    const skillsCount = parsed.skills.length;
+    const experienceScore = Math.min(parsed.experience_years / 10, 1);
+    const score = Math.round((skillsCount * 0.6 + experienceScore * 0.4) * 100);
+
+    await Result.create({
+      application: application._id,
+      aiSummary: text,
+      skills: parsed.skills,
+      experienceYears: parsed.experience_years,
+      score,
+    });
+
+    res.json({ status: "success", applicationId: application._id, score });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.get("/dashboard/leaderboard/:jobId", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(jobId)) return res.status(400).json({ error: "Invalid jobId" });
+
+    const results = await Result.find()
+      .populate({
+        path: "application",
+        match: { job: jobId },
+        populate: { path: "applicant", select: "fullName email" },
+      })
+      .sort({ score: -1 });
+
+    const leaderboard = results
+      .filter(r => r.application)
+      .map(r => ({
+        applicant: r.application.applicant,
+        score: r.score,
+        applicationId: r.application._id,
+        appliedAt: r.application.createdAt,
+      }));
+
+    res.json(leaderboard);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/dashboard/filter/:jobId", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const { minScore, skill } = req.query;
+
+    const query = { "application.job": jobId };
+    if (minScore) query.score = { $gte: parseInt(minScore) };
+    if (skill) query.skills = skill;
+
+    const results = await Result.find(query)
+      .populate({
+        path: "application",
+        populate: { path: "applicant", select: "fullName email" },
+      });
+
+    const filtered = results.map(r => ({
+      applicant: r.application.applicant,
+      score: r.score,
+      skills: r.skills,
+      appliedAt: r.application.createdAt,
+    }));
+
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
