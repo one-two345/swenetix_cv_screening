@@ -182,39 +182,6 @@ app.get("/dashboard/leaderboard/:jobId", async (req, res) => {
 });
 
 
-app.get("/dashboard/filter/:jobId", async (req, res) => {
-  try {
-    const { jobId } = req.params;
-    const { minScore, skill } = req.query;
-
-    const query = {};
-    if (minScore) query.score = { $gte: parseInt(minScore) };
-    if (skill) query.skills = skill;
-
-    const results = await Result.find(query)
-      .populate({
-        path: "application",
-        match: { job: jobId },
-        populate: { path: "applicant", select: "fullName email" },
-      });
-
-    const filtered = results
-      .filter(r => r.application)
-      .map(r => ({
-        applicant: r.application.applicant,
-        score: r.score,
-        skills: r.skills,
-        appliedAt: r.application.createdAt,
-      }));
-
-    res.json(filtered);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`Server running on port ${PORT}`)
