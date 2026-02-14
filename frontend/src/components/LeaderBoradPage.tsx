@@ -1,47 +1,16 @@
 import React from "react";
-
-interface Applicant {
-  id: string;
-  name: string;
-  jobTitle: string;
-  score: number; // e.g., CV screening score
-  appliedAt: string; // date string
-}
-
-const demoApplicants: Applicant[] = [
-  {
-    id: "1",
-    name: "Alice Johnson",
-    jobTitle: "Frontend Developer",
-    score: 92,
-    appliedAt: "2026-02-10",
-  },
-  {
-    id: "2",
-    name: "Bob Smith",
-    jobTitle: "Backend Developer",
-    score: 88,
-    appliedAt: "2026-02-11",
-  },
-  {
-    id: "3",
-    name: "Charlie Brown",
-    jobTitle: "AI Engineer",
-    score: 95,
-    appliedAt: "2026-02-12",
-  },
-  {
-    id: "4",
-    name: "Dana White",
-    jobTitle: "Frontend Developer",
-    score: 85,
-    appliedAt: "2026-02-13",
-  },
-];
+import { useGetApplicantsQuery } from "../api/applicantApi";
+// import { useGetApplicantsQuery } from "../services/applicantApi";
 
 const LeaderboardPage: React.FC = () => {
+  // Fetch applicants using RTK Query
+  const { data: applicants, isLoading, isError } = useGetApplicantsQuery();
+
+  if (isLoading) return <p className="p-8">Loading applicants...</p>;
+  if (isError) return <p className="p-8 text-red-500">Error fetching applicants.</p>;
+
   // Sort applicants by score descending
-  const sortedApplicants = [...demoApplicants].sort((a, b) => b.score - a.score);
+  const sortedApplicants = [...(applicants || [])].sort((a, b) => b.score - a.score);
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -54,7 +23,7 @@ const LeaderboardPage: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-gray-700">Rank</th>
                 <th className="px-6 py-3 text-gray-700">Name</th>
-                <th className="px-6 py-3 text-gray-700">Job</th>
+                <th className="px-6 py-3 text-gray-700">email</th>
                 <th className="px-6 py-3 text-gray-700">Score</th>
                 <th className="px-6 py-3 text-gray-700">Applied On</th>
               </tr>
@@ -63,15 +32,13 @@ const LeaderboardPage: React.FC = () => {
               {sortedApplicants.map((applicant, index) => (
                 <tr
                   key={applicant.id}
-                  className={`border-b ${
-                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                  } hover:bg-blue-50 cursor-pointer`}
+                  className={`border-b ${index % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50 cursor-pointer`}
                 >
                   <td className="px-6 py-3 font-semibold">{index + 1}</td>
-                  <td className="px-6 py-3">{applicant.name}</td>
-                  <td className="px-6 py-3">{applicant.jobTitle}</td>
+                  <td className="px-6 py-3">{applicant.fullName}</td>
+                  <td className="px-6 py-3">{applicant.email}</td>
                   <td className="px-6 py-3 font-medium text-blue-500">{applicant.score}</td>
-                  <td className="px-6 py-3">{applicant.appliedAt}</td>
+                  <td className="px-6 py-3">{new Date(applicant.timestamp).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

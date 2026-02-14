@@ -1,19 +1,22 @@
 import React, { useState } from "react";
-import type { Job } from "./jobsList";
+
+import { useAddJobMutation } from "../api/jobApi";
+import type { Job } from "../types";
+
 
 interface JobFormProps {
-  onSave: (job: Job) => void;
   onClose: () => void;
-  nextId: string;
 }
 
-const JobForm: React.FC<JobFormProps> = ({ onSave, onClose, nextId }) => {
+const JobForm: React.FC<JobFormProps> = ({ onClose }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     location: "",
     employmentType: "Full-time" as Job["employmentType"],
   });
+
+  const [addJob, { isLoading }] = useAddJobMutation();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -22,20 +25,22 @@ const JobForm: React.FC<JobFormProps> = ({ onSave, onClose, nextId }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newJob: Job = {
-      id: nextId,
-      ...formData,
-    };
-    onSave(newJob);
-    // reset form
-    setFormData({
-      title: "",
-      description: "",
-      location: "",
-      employmentType: "Full-time",
-    });
+
+    try {
+      await addJob(formData).unwrap(); // unwrap allows catching errors
+      setFormData({
+        title: "",
+        description: "",
+        location: "",
+        employmentType: "Full-time",
+      });
+      onClose();
+    } catch (error) {
+      console.error("Failed to add job:", error);
+      alert("Failed to add job. Try again.");
+    }
   };
 
   return (
@@ -108,9 +113,12 @@ const JobForm: React.FC<JobFormProps> = ({ onSave, onClose, nextId }) => {
 
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition"
+            disabled={isLoading}
+            className={`w-full py-2 rounded-lg text-white font-semibold transition ${
+              isLoading ? "bg-blue-300" : "bg-blue-500 hover:bg-blue-600"
+            }`}
           >
-            Save Job
+            {isLoading ? "Saving..." : "Save Job"}
           </button>
         </form>
       </div>
