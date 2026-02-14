@@ -1,25 +1,10 @@
-import mongoose from 'mongoose';    
+import mongoose from 'mongoose';
 
-const TestSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    score: {
-        type: Number,
-        required: true
-    },
-    date: {
-        type: Date,
-        default: Date.now
-    }
-});
+const JobSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  location: { type: String },
+  employmentType: { type: String },
+}, { timestamps: true });
 
-export default mongoose.model('Test', TestSchema);
-
-export const createTest = async (testData) => {
-    const Test = mongoose.model('Test');
-    const test = new Test(testData);
-    return await test.save();
-};
+export default mongoose.model('Job', JobSchema);
